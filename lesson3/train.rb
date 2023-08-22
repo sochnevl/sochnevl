@@ -1,55 +1,60 @@
 class Train
-  attr_accessor :speed # Может набирать скорость, Может возвращать текущую скорость
-  attr_reader :numbers_of_wagons # Может возвращать количество вагонов
-  attr_reader :type
-  
-  def initialize(number, type, numbers_of_wagons) # Имеет номер (произвольная строка) и тип (грузовой, пассажирский) и количество вагонов, эти данные указываются при создании экземпляра класса
-  	@number = number
-  	@type = type.downcase
-  	@numbers_of_wagons = numbers_of_wagons
-    @array_of_train_station = nil
-    @current_station_index = 0
+  # Может: набирать скорость, возвращать текущую скорость, возвращать количество вагонов, возвращать текущую станцию.
+  attr_accessor :speed
+  attr_reader :number, :type, :numbers_of_wagons, :current_station
+  # Имеет номер, тип (грузовой, пассажирский) и количество вагонов.
+  def initialize(number, type, numbers_of_wagons)
+    @number = number
+    @type = type.downcase
+    @numbers_of_wagons = numbers_of_wagons
     @speed = 0
   end
-
-  def stop # Может тормозить (сбрасывать скорость до нуля)
-  	@speed = 0
+  # Может тормозить (сбрасывать скорость до нуля).
+  def stop
+    @speed = 0
   end
-
+  # Может прицеплять/отцеплять вагоны. Прицепка/отцепка вагонов может осуществляться только если поезд не движется.
   def attach_a_wagon
-  	if @speed == 0
-  	  @numbers_of_wagons += 1
-    else
-      puts "Сперва остановите поезд!"
-  	end
+    @numbers_of_wagons += 1 if @speed == 0
   end
 
-  def unhook_the_wagon # Может прицеплять/отцеплять вагоны (по одному вагону за операцию, метод просто увеличивает или уменьшает количество вагонов). Прицепка/отцепка вагонов может осуществляться только если поезд не движется.
-  	if @speed == 0
-  	  @numbers_of_wagons -= 1
-    else
-      puts "Сперва остановите поезд!"
-  	end
+  def unhook_the_wagon
+    @numbers_of_wagons -= 1 if @speed == 0 && @numbers_of_wagons > 0
+  end
+  # Может принимать маршрут следования. При назначении маршрута поезду, поезд автоматически помещается на первую станцию в маршруте.
+  def add_route(route)
+    @route = route
+    @current_station = route.stations.first
+    @current_station.add_train(self)
+  end
+  # Может перемещаться между станциями, указанными в маршруте.
+  def move_forward
+    return unless next_station
+
+    @current_station.send_train(self)
+    @current_station = next_station
+    @current_station.add_train(self)
   end
 
-  def add_route(route) # Может принимать маршрут следования (объект класса Route). При назначении маршрута поезду, поезд автоматически помещается на первую станцию в маршруте.
-    @array_of_train_station = route.stations
-    puts "Поезд прибыл на первую станцию #{@array_of_train_station[@current_station_index]}" 
-  end
+  def move_backward
+    return unless previous_station
 
-  def next_station # Может перемещаться между станциями, указанными в маршруте. Перемещение возможно вперед и назад, но только на 1 станцию за раз.
-    @current_station_index += 1
-    puts "Поезд прибыл на станцию #{@array_of_train_station[@current_station_index]}"
+    @current_station.send_train(self)
+    @current_station = previous_station
+    @current_station.add_train(self)
   end
-  
+  # Может возвращать следующую станцию.
+  def next_station
+    return unless @route
+
+    current_index = @route.stations.index(@current_station)
+    @route.stations[current_index + 1] if current_index < @route.stations.size - 1
+  end
+  # Может возвращать предыдущую станцию.
   def previous_station
-    @current_station_index -= 1
-    puts "Поезд вернулся на станцию #{@array_of_train_station[@current_station_index]}"
-  end
+    return unless @route
 
-  def info_stations # Возвращать предыдущую станцию, текущую, следующую, на основе маршрута
-    puts "Текущая станция: #{@array_of_train_station[@current_station_index]}"
-    puts "Предыдущая станция: #{@array_of_train_station[@current_station_index - 1]}"
-    puts "Следующая станция: #{@array_of_train_station[@current_station_index + 1]}"
+    current_index = @route.stations.index(@current_station)
+    @route.stations[current_index - 1] if current_index.positive?
   end
 end
